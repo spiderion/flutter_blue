@@ -7,10 +7,10 @@ part of flutter_blue;
 class FlutterBlue {
   final MethodChannel _channel = const MethodChannel('$NAMESPACE/methods');
   final EventChannel _stateChannel = const EventChannel('$NAMESPACE/state');
-  final StreamController<MethodCall> _methodStreamController =
+  StreamController<MethodCall> _methodStreamController =
       new StreamController.broadcast(); // ignore: close_sinks
-  Stream<MethodCall> get _methodStream => _methodStreamController
-      .stream; // Used internally to dispatch methods from platform.
+  Stream<MethodCall> get _methodStream =>
+      _methodStreamController.stream; // Used internally to dispatch methods from platform.
 
   /// Singleton boilerplate
   FlutterBlue._() {
@@ -21,21 +21,28 @@ class FlutterBlue {
     _setLogLevelIfAvailable();
   }
 
+  void reset() async {
+    await _methodStreamController.close();
+    _methodStreamController = StreamController.broadcast();
+  }
+
   static FlutterBlue _instance = new FlutterBlue._();
+
   static FlutterBlue get instance => _instance;
 
   /// Log level of the instance, default is all messages (debug).
   LogLevel _logLevel = LogLevel.debug;
+
   LogLevel get logLevel => _logLevel;
 
   /// Checks whether the device supports Bluetooth
-  Future<bool> get isAvailable =>
-      _channel.invokeMethod('isAvailable').then<bool>((d) => d);
+  Future<bool> get isAvailable => _channel.invokeMethod('isAvailable').then<bool>((d) => d);
 
   /// Checks if Bluetooth functionality is turned on
   Future<bool> get isOn => _channel.invokeMethod('isOn').then<bool>((d) => d);
 
   BehaviorSubject<bool> _isScanning = BehaviorSubject.seeded(false);
+
   Stream<bool> get isScanning => _isScanning.stream;
 
   BehaviorSubject<List<ScanResult>> _scanResults = BehaviorSubject.seeded([]);
@@ -211,18 +218,11 @@ enum LogLevel {
 }
 
 /// State of the bluetooth adapter.
-enum BluetoothState {
-  unknown,
-  unavailable,
-  unauthorized,
-  turningOn,
-  on,
-  turningOff,
-  off
-}
+enum BluetoothState { unknown, unavailable, unauthorized, turningOn, on, turningOff, off }
 
 class ScanMode {
   const ScanMode(this.value);
+
   static const lowPower = const ScanMode(0);
   static const balanced = const ScanMode(1);
   static const lowLatency = const ScanMode(2);
@@ -232,6 +232,7 @@ class ScanMode {
 
 class DeviceIdentifier {
   final String id;
+
   const DeviceIdentifier(this.id);
 
   @override
@@ -241,15 +242,13 @@ class DeviceIdentifier {
   int get hashCode => id.hashCode;
 
   @override
-  bool operator ==(other) =>
-      other is DeviceIdentifier && compareAsciiLowerCase(id, other.id) == 0;
+  bool operator ==(other) => other is DeviceIdentifier && compareAsciiLowerCase(id, other.id) == 0;
 }
 
 class ScanResult {
   ScanResult.fromProto(protos.ScanResult p)
       : device = new BluetoothDevice.fromProto(p.device),
-        advertisementData =
-            new AdvertisementData.fromProto(p.advertisementData),
+        advertisementData = new AdvertisementData.fromProto(p.advertisementData),
         rssi = p.rssi;
 
   final BluetoothDevice device;
@@ -259,9 +258,7 @@ class ScanResult {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ScanResult &&
-          runtimeType == other.runtimeType &&
-          device == other.device;
+      other is ScanResult && runtimeType == other.runtimeType && device == other.device;
 
   @override
   int get hashCode => device.hashCode;
@@ -282,8 +279,7 @@ class AdvertisementData {
 
   AdvertisementData.fromProto(protos.AdvertisementData p)
       : localName = p.localName,
-        txPowerLevel =
-            (p.txPowerLevel.hasValue()) ? p.txPowerLevel.value : null,
+        txPowerLevel = (p.txPowerLevel.hasValue()) ? p.txPowerLevel.value : null,
         connectable = p.connectable,
         manufacturerData = p.manufacturerData,
         serviceData = p.serviceData,
